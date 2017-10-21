@@ -18,4 +18,4 @@ api.wait_on_rate_limit = True
 api.wait_on_rate_limit_notify = True
 
 for tweet in tweepy.Cursor(api.user_timeline).items():
-        print(tweet.created_at, tweet.text, tweet.user.id, tweet.user.followers_count)
+    print(tweet.created_at, tweet.text, tweet.user.id, tweet.user.followers_count)
