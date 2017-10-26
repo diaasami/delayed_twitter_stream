@@ -20,40 +20,36 @@ api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 def format_geopos_for_twitter(pos):
     return "{},{}".format(pos[0], pos[1]);
 
-#washington_dc_geopos=(38.883333, -77);
-#london_geopos=(51.5, -0.083333);
-#cairo_geopos=(30.05, 31.25);
-#berlin_geopos=(52.51666667, 13.4);
-#trendinaliaDE_geopos=(52.338079,13.088304);
-freedomBdj_geopos=(52.5006,13.3989);
-#ottawa_geopos=(45.41666667,-75.7);
+def create_tweets_generator(lat, lon, delta):
+    # TODO Handle timezone difference properly
+    now = datetime.datetime.now();
 
-delta = datetime.timedelta(days=1)
-now = datetime.datetime.now();
+    cut_off = now - delta;
+    pos = (lat, lon)
+    radius = "1km"
+    radius_suffix = "," + radius
 
-cut_off = now - delta;
+    location_search = format_geopos_for_twitter(pos) + ",1km"
+    print(location_search)
 
-max_id = None;
-last_id = None;
-done = False;
-found = False;
+    max_id = None;
+    last_id = None;
+    done = False;
+    found = False;
 
-#Skip until first valid tweet
-
-while not found:
-    for name, pos in [(k, v) for k, v in locals().items() if k.endswith("_geopos")]:
+    # Skip until first valid tweet
+    while not found:
         print("Query with max_id={}".format(max_id))
 
         if (max_id):
-            results = api.search( q="*", result_type="recent", max_id = max_id, geocode=format_geopos_for_twitter(pos) + ",1km", count="100")
+            results = api.search( q="*", result_type="recent", max_id=max_id, geocode=location_search, count="100")
         else:
-            results = api.search( q="*", result_type="recent", geocode=format_geopos_for_twitter(pos) + ",1km")
+            results = api.search( q="*", result_type="recent", geocode=location_search)
 
-        print("{}: {}".format(name, len(results)));
+        #print("{}: {}".format(name, len(results)));
 
         for res in results:
-            #print(res);
-            print(res.created_at)
+            #print(res.created_at)
 
             if (res.created_at < cut_off):
                 print("Found first tweet older than 24 hours", res.created_at)
@@ -62,23 +58,30 @@ while not found:
                 break;
             last_id = res.id_str
 
-        sys.stdout.flush();
-        sleep(5)
+        if (not found):
+            max_id = last_id
 
-    if (not found):
-        max_id = last_id
+    # No valid tweets
+    if (not max_id):
+        return;
+    print(max_id);
 
-print(max_id);
+    # TODO hand over remaining tweets from loop #1 to loop #2 somehow to save some bandwidth and make the service faster
+    #input("First tweet found, Press Enter to continue")
+    skip_first = False;
+    while True:
+        results = api.search( q="*", result_type="recent", max_id=max_id, geocode=location_search)
 
-input("First tweet found, Press Enter to continue")
-while True:
-    results = api.search( q="*", result_type="recent", max_id = max_id, geocode=format_geopos_for_twitter(pos) + ",1km", count="10")
+        if (len(results)) == 0:
+            return;
 
-    if (len(results)) == 0:
-        break;
+        for res in results:
+            if skip_first:
+                skip_first=False;
+                continue
+            #print(res.created_at, ":", res.text);
+            yield (res.created_at, res.text)
+            max_id = res.id_str
+            #input("Press Enter to continue")
+        skip_first = True
 
-    for res in results:
-        print(res.created_at, ":", res.text);
-        max_id = res.id_str
-        sys.stdout.flush();
-        input("Press Enter to continue")
