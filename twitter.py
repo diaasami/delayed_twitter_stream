@@ -26,15 +26,11 @@ def create_tweets_generator(lat, lon, delta):
 
     cut_off = now - delta;
     pos = (lat, lon)
-    radius = "1km"
-    radius_suffix = "," + radius
-
-    location_search = format_geopos_for_twitter(pos) + ",1km"
-    print(location_search)
+    radius = "1km" # Smallest radius supported by twitter
+    loc_condition = format_geopos_for_twitter(pos) + "," + radius
 
     max_id = None;
     last_id = None;
-    done = False;
     found = False;
 
     # Skip until first valid tweet
@@ -42,9 +38,10 @@ def create_tweets_generator(lat, lon, delta):
         print("Query with max_id={}".format(max_id))
 
         if (max_id):
-            results = api.search( q="*", result_type="recent", max_id=max_id, geocode=location_search, count="100")
+            results = api.search( q="*", result_type="recent", max_id=max_id,
+                                  geocode=loc_condition, count="100")
         else:
-            results = api.search( q="*", result_type="recent", geocode=location_search)
+            results = api.search( q="*", result_type="recent", geocode=loc_condition)
 
         #print("{}: {}".format(name, len(results)));
 
@@ -70,7 +67,7 @@ def create_tweets_generator(lat, lon, delta):
     #input("First tweet found, Press Enter to continue")
     skip_first = False;
     while True:
-        results = api.search( q="*", result_type="recent", max_id=max_id, geocode=location_search)
+        results = api.search( q="*", result_type="recent", max_id=max_id, geocode=loc_condition)
 
         if (len(results)) == 0:
             return;
