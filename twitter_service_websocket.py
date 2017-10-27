@@ -13,8 +13,10 @@ mandatory_parameters = ("lat", "lon")
 async def handle_request(websocket, path):
     url_components = urlparse(path);
 
-    if (not url_components.path== "/"):
-        print("Invalid path: {}".format(url_components.path));
+    if (not url_components.path == "/"):
+        error = "Invalid path: {}".format(url_components.path);
+        await websocket.send(error);
+        print(error);
         return
 
     params = parse_qs(url_components.query);
@@ -24,8 +26,9 @@ async def handle_request(websocket, path):
 
         lat, lon = float(lat), float(lon)
     except (ValueError, KeyError) as e:
-        print("Invalid parameters");
-        print("Parameters ({}) are required".format(", ".join(mandatory_parameters)));
+        error = "Floating-point parameters ({}) are required".format(", ".join(mandatory_parameters))
+        print(error);
+        await websocket.send(error);
         return
 
     for tweet in twitter.create_tweets_generator(lat, lon, timedelta(days=1)):
@@ -33,7 +36,6 @@ async def handle_request(websocket, path):
         await websocket.send(msg)
         print("> {}".format(msg))
 
-        # wait for something, anything
         received = await websocket.recv()
         print("< {}".format(received));
 
