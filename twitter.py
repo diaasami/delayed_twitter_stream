@@ -42,7 +42,7 @@ def _get_tweets_stream(starting_max_id, loc_condition):
 
 
 def create_tweets_generator(lat, lon, delta):
-    # TODO Handle timezone difference properly
+    # TODO Make sure timezone timezone difference is handled properly
     now = datetime.datetime.now();
 
     cut_off = now - delta;
@@ -82,7 +82,6 @@ def create_tweets_generator(lat, lon, delta):
     if (not max_id):
         return;
 
-    # TODO hand over remaining tweets from loop #1 to loop #2 somehow to save some bandwidth and make the service faster
-    # input("First tweet found, Press Enter to continue")
+    # TODO hand over remaining tweets from loop #1 to loop #2 to save bandwidth and make the service faster
     for tweet in _get_tweets_stream(max_id, loc_condition):
         yield (tweet.created_at, tweet.text)
