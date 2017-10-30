@@ -34,10 +34,10 @@ async def handle_request(websocket, path):
     for tweet in twitter.create_tweets_generator(lat, lon, timedelta(days=1)):
         msg = "{}".format(tweet)
         await websocket.send(msg)
-        print("> {}".format(msg))
+        print("> {}".format(msg).encode("utf-8"))
 
         received = await websocket.recv()
-        print("< {}".format(received));
+        print("< {}".format(received).encode("utf-8"));
 
 def run_server():
     start_server = websockets.serve(handle_request, '0.0.0.0', 8080)

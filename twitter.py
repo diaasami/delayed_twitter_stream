@@ -5,6 +5,7 @@ import os
 from time import sleep
 import datetime
 import sys
+import itertools
 
 CONSUMER_KEY = os.getenv("CONSUMER_KEY")
 CONSUMER_SECRET = os.getenv("CONSUMER_SECRET")
@@ -17,8 +18,26 @@ auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
-def format_geopos_for_twitter(pos):
+def _skip_first_element(iterable):
+    return itertools.islice(iterable, 1, None);
+
+def _format_geopos_for_twitter(pos):
     return "{},{}".format(pos[0], pos[1]);
+
+def _get_tweets_stream(starting_max_id, loc_condition):
+    max_id = starting_max_id
+
+    while True:
+        results = api.search( q="*", result_type="recent", max_id=max_id, geocode=loc_condition)
+
+        if (len(results) == 0):
+            break;
+
+        for res in _skip_first_element(results):
+            yield res
+            max_id = res.id_str
+
+    return;
 
 def create_tweets_generator(lat, lon, delta):
     # TODO Handle timezone difference properly
@@ -27,7 +46,7 @@ def create_tweets_generator(lat, lon, delta):
     cut_off = now - delta;
     pos = (lat, lon)
     radius = "1km" # Smallest radius supported by twitter
-    loc_condition = format_geopos_for_twitter(pos) + "," + radius
+    loc_condition = _format_geopos_for_twitter(pos) + "," + radius
 
     max_id = None;
     last_id = None;
@@ -45,6 +64,8 @@ def create_tweets_generator(lat, lon, delta):
 
         #print("{}: {}".format(name, len(results)));
 
+        
+
         for res in results:
             #print(res.created_at)
 
@@ -52,6 +73,7 @@ def create_tweets_generator(lat, lon, delta):
                 print("Found first tweet older than 24 hours", res.created_at)
                 max_id = res.id_str
                 found = True;
+                yield (res.created_at, res.text) 
                 break;
             last_id = res.id_str
 
@@ -65,20 +87,6 @@ def create_tweets_generator(lat, lon, delta):
 
     # TODO hand over remaining tweets from loop #1 to loop #2 somehow to save some bandwidth and make the service faster
     #input("First tweet found, Press Enter to continue")
-    skip_first = False;
-    while True:
-        results = api.search( q="*", result_type="recent", max_id=max_id, geocode=loc_condition)
-
-        if (len(results)) == 0:
-            return;
-
-        for res in results:
-            if skip_first:
-                skip_first=False;
-                continue
-            #print(res.created_at, ":", res.text);
-            yield (res.created_at, res.text)
-            max_id = res.id_str
-            #input("Press Enter to continue")
-        skip_first = True
+    for tweet in _get_tweets_stream(max_id, loc_condition):
+        yield (tweet.created_at, tweet.text) 
 
