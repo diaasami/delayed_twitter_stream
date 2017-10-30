@@ -10,6 +10,7 @@ import twitter
 
 mandatory_parameters = ("lat", "lon")
 
+
 async def handle_request(websocket, path):
     url_components = urlparse(path);
 
@@ -39,10 +40,12 @@ async def handle_request(websocket, path):
         received = await websocket.recv()
         print("< {}".format(received).encode("utf-8"));
 
+
 def run_server():
     start_server = websockets.serve(handle_request, '0.0.0.0', 8080)
 
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
+
 
 run_server();
