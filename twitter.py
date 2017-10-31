@@ -25,18 +25,17 @@ def _format_geopos_for_twitter(pos):
     return "{},{}".format(pos[0], pos[1]);
 
 
-def _get_tweets_stream(starting_max_id, loc_condition):
-    max_id = starting_max_id
+def _get_tweets_stream(starting_since_id, loc_condition):
+    since_id = starting_since_id
 
     while True:
-        results = api.search(q="*", result_type="recent", max_id=max_id, geocode=loc_condition)
-
-        if (len(results) == 0):
-            break;
+        # new search request
+        print("New search request(since_id:{})".format(since_id))
+        results = api.search(q="*", result_type="recent", since_id=since_id, geocode=loc_condition, count=10)
 
         for res in _skip_first_element(results):
             yield res
-            max_id = res.id_str
+            since_id = res.id_str
 
     return;
 
@@ -66,12 +65,13 @@ def create_tweets_generator(lat, lon, delta):
 
 
         for res in results:
+            #print(res.id_str, res.created_at, res.text)
 
             if (res.created_at < cut_off):
                 print("Found first tweet older than 24 hours", res.created_at)
                 max_id = res.id_str
                 found = True;
-                yield (res.created_at, res.text)
+                yield res
                 break;
             last_id = res.id_str
 
@@ -81,7 +81,8 @@ def create_tweets_generator(lat, lon, delta):
     # No valid tweets
     if (not max_id):
         return;
+    print(max_id);
 
     # TODO hand over remaining tweets from loop #1 to loop #2 to save bandwidth and make the service faster
     for tweet in _get_tweets_stream(max_id, loc_condition):
-        yield (tweet.created_at, tweet.text)
+        yield tweet
