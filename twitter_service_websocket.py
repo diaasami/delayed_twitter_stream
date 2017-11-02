@@ -34,10 +34,10 @@ async def handle_request(websocket, path):
         return
 
     sleep_period = 5  # in seconds
-    delta = timedelta(days=1)
+    delta = timedelta(hours=1)
 
-    for tweet in twitter.create_tweets_generator(lat, lon, timedelta(days=1)):
-        #print((tweet.created_at, tweet.text))
+    for tweet in twitter.create_tweets_generator(lat, lon, delta):
+        print("handle_request", (tweet.created_at, tweet.text))
         while True:
             time_remaining = tweet.created_at - (datetime.now() - delta)
             time_remaining = time_remaining.total_seconds()
@@ -45,16 +45,14 @@ async def handle_request(websocket, path):
             if (time_remaining < 0):
                 break;
             elif (time_remaining == 0):
-                msg = "{}".format(tweet)
+                msg = "{}".format((tweet.created_at, tweet.text))
                 await websocket.send(msg)
                 print("> {}".format(msg).encode("utf-8"))
                 break;
             elif (time_remaining > sleep_period):
-                print("Sleeping 5")
+                print("Sleeping 5, time_remaining: {}".format(time_remaining))
                 sleep(sleep_period)
                 websocket.ping()
-            else:
-                sleep(1)
 
 def run_server():
     start_server = websockets.serve(handle_request, '0.0.0.0', 8080)
