@@ -34,18 +34,21 @@ async def handle_request(websocket, path):
         return
 
     sleep_period = 5  # in seconds
-    delta = timedelta(hours=1)
+    delta = timedelta(hours=2)
 
-    for tweet in twitter.create_tweets_generator(lat, lon, delta):
-        print("handle_request", (tweet.created_at, tweet.text))
+    # TODO Make sure timezone timezone difference is handled properly
+    cut_off = datetime.now() - delta;
+
+    for tweet in twitter.create_tweets_generator(lat, lon, cut_off):
+        print("Next tweet", (tweet.id_str, tweet.created_at, tweet.text))
         while True:
             time_remaining = tweet.created_at - (datetime.now() - delta)
-            time_remaining = time_remaining.total_seconds()
+            time_remaining = int(time_remaining.total_seconds())
             # Skip tweet
             if (time_remaining < 0):
                 break;
             elif (time_remaining == 0):
-                msg = "{}".format((tweet.created_at, tweet.text))
+                msg = "{}".format((tweet.created_at, tweet.id_str, tweet.text))
                 await websocket.send(msg)
                 print("> {}".format(msg).encode("utf-8"))
                 break;
