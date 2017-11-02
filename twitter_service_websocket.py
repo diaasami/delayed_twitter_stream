@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+
 import asyncio
 import websockets
 from urllib.parse import urlparse, parse_qs
 import os, sys
 from datetime import timedelta, datetime
 from time import sleep
+import json
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -34,28 +37,30 @@ async def handle_request(websocket, path):
         return
 
     sleep_period = 5  # in seconds
-    delta = timedelta(hours=2)
+    delta = timedelta(days=1)
 
-    # TODO Make sure timezone timezone difference is handled properly
-    cut_off = datetime.now() - delta;
 
-    for tweet in twitter.create_tweets_generator(lat, lon, cut_off):
-        print("Next tweet", (tweet.id_str, tweet.created_at, tweet.text))
-        while True:
-            time_remaining = tweet.created_at - (datetime.now() - delta)
-            time_remaining = int(time_remaining.total_seconds())
-            # Skip tweet
-            if (time_remaining < 0):
-                break;
-            elif (time_remaining == 0):
-                msg = "{}".format((tweet.created_at, tweet.id_str, tweet.text))
-                await websocket.send(msg)
-                print("> {}".format(msg).encode("utf-8"))
-                break;
-            elif (time_remaining > sleep_period):
-                print("Sleeping 5, time_remaining: {}".format(time_remaining))
-                sleep(sleep_period)
-                websocket.ping()
+    while True:
+        # TODO Make sure timezone timezone difference is handled properly
+        cut_off = datetime.now() - delta;
+        for tweet in twitter.create_tweets_generator(lat, lon, cut_off):
+            print("Next tweet", (tweet.id_str, tweet.created_at, tweet.text))
+            while True:
+                time_remaining = tweet.created_at - (datetime.now() - delta)
+                time_remaining = int(time_remaining.total_seconds())
+                # Skip tweet
+                if (time_remaining < 0):
+                    break;
+                elif (time_remaining == 0):
+                    await websocket.send(json.dumps({'created_at': str(tweet.created_at),
+                                                     'id_str': tweet.id_str,
+                                                     'text': tweet.text}))
+                    print("> {}".format((tweet.created_at, tweet.id_str, tweet.text)).encode("utf-8"))
+                    break;
+                elif (time_remaining > sleep_period):
+                    print("Sleeping 5, time_remaining: {}".format(time_remaining))
+                    sleep(sleep_period)
+                    websocket.ping()
 
 def run_server():
     start_server = websockets.serve(handle_request, '0.0.0.0', 8080)

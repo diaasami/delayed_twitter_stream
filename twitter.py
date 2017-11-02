@@ -37,6 +37,7 @@ def _get_tweets_stream(loc_condition, ids):
         if (len(batch_ids) == 0):
             break;
 
+        # Get tweet information
         results = _api.statuses_lookup(id_=batch_ids)
         for res in sorted(results, key=attrgetter("created_at")):
             yield res
@@ -53,11 +54,7 @@ def create_tweets_generator(lat, lon, cut_off):
 
     results = tweepy.Cursor(_api.search, q="*", result_type="recent", geocode=loc_condition).items()
 
-    reply_count = 0;
     for res in results:
-        if (res.in_reply_to_status_id_str):
-            reply_count += 1;
-            continue;
         print(res.id_str, res.created_at, res.text)
         ids.put_nowait(res.id_str)
 
@@ -67,7 +64,6 @@ def create_tweets_generator(lat, lon, cut_off):
             break;
 
     print("Storing IDs of {} tweets".format(ids.qsize()));
-    print("Discarded {} replies".format(reply_count));
 
     for tweet in _get_tweets_stream(loc_condition, ids):
         yield tweet
