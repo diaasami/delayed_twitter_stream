@@ -42,11 +42,11 @@ async def handle_request(websocket, path):
 
     while True:
         # TODO Make sure timezone timezone difference is handled properly
-        cut_off = datetime.now() - delta;
+        cut_off = datetime.utcnow() - delta;
         for tweet in twitter.create_tweets_generator(lat, lon, cut_off):
             print("Next tweet", (tweet.id_str, tweet.created_at, tweet.text))
             while True:
-                time_remaining = tweet.created_at - (datetime.now() - delta)
+                time_remaining = tweet.created_at - (datetime.utcnow() - delta)
                 time_remaining = int(time_remaining.total_seconds())
                 # Skip tweet
                 if (time_remaining < 0):
