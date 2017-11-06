@@ -59,7 +59,7 @@ async def handle_request(websocket, path):
                     break;
                 elif (time_remaining > sleep_period):
                     print("Sleeping 5, time_remaining: {}".format(time_remaining))
-                    sleep(sleep_period)
+                    await asyncio.sleep(sleep_period)
                     websocket.ping()
 
 def run_server():
